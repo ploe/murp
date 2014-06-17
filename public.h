@@ -39,9 +39,14 @@ enum {
 	key and value are C strings containing the values we ripped out of the
 	object we're lexing.	*/
 
+typedef struct Slice {
+	char *start;
+	unsigned int len;
+} Slice;
+
 typedef struct Atom {
 	Datatype type, container;
-	char *key, *value;
+	Slice key, value;
 } Atom;
 
 /*	Status codes that our Atomizer function can yield. This tells the
@@ -62,7 +67,7 @@ enum {
 	the value is.
 
 	This means we can parse it with our Atomizer function.		*/
-Atomizer Atomize(char *src, Atomizer (*callback)(Atom *));
+Atomizer Atomize(char *src, Atomizer (*callback)(Atom));
 
 /*	public macros	*/
 

@@ -38,14 +38,24 @@ void *get_callback(callback_t *c) {
 	return NULL;
 }
 
-Atomizer print_atom(Atom *atom) {
-	printf("Atom {\n\tDatatype:\t%d\n\tContainer:\t%d\n\tKey:\t\t%s\n\tValue:\t\t%s\n}\n\n", atom->type, atom->container, atom->key, atom->value);
-	if(IS_ERROR(atom->type)) return BREAK;
+Atomizer print_atom(Atom atom) {
+	printf("Atom {\n\tDatatype:\t%d\n\tContainer:\t%d\n\tKey:\t\t", atom.type, atom.container);
+	int i;
+	for (i = 0; i < atom.key.len; i++) {
+		putchar(*(atom.key.start+i));
+	}
+	printf("\n\tValue:\t\t");
+	for (i = 0; i < atom.value.len; i++) {
+		putchar(*(atom.value.start+i));
+	}
+	puts("\n}\n");
+	
+	if(IS_ERROR(atom.type)) return BREAK;
 	return CONTINUE;
 }
 
 int main(int argc, char *argv[]) {
-	Atomize("{\"vix is teh sex\":\"SHE SURE IS SCAMP\"}", print_atom);
+	Atomize("{\"vix is teh sex\":\"SHE SURE IS SCAMP\", \"NUSHNUSH\":\"STRING\", \"well what do we have here\"    :      \"HOT men steal trunks\"}", print_atom);
 //	callback_t callbacks[] = {
 //		{"token", NULL}, 
 //		{"token2", NULL}

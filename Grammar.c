@@ -10,13 +10,20 @@ char *Store(Lexer *lexer) {
 	return str;
 }
 
+Slice Dispatch(Lexer *lexer) {
+	Slice val = {lexer->start, lexer->len - 1};
+	Ditch(lexer);
+
+	return val;
+}
+
 static void *GetStringValue(Lexer *lexer, Atom *atom) {
 	Fear(lexer, "\"");
 	if (PrevSteps(lexer, 2) == '\\') {
 	}
 	
 	atom->type = STRING;
-	atom->value = Store(lexer);
+	atom->value = Dispatch(lexer);
 	return SEND_ATOM;
 }
 
@@ -36,10 +43,7 @@ static void *GetKeyBody(Lexer *lexer, Atom *atom) {
 	Fear(lexer, "\"");
 	if (PrevSteps(lexer, 2) == '\\') return *GetKeyBody;
 
-	char *key = calloc(lexer->len + 1, sizeof(char));
-
-	strncpy(key, lexer->start, lexer->len - 1);
-	atom->key = key;
+	atom->key = Dispatch(lexer);
 	
 	char c = Ignore(lexer, WHITESPACE);
 	switch (c) {
@@ -62,6 +66,7 @@ static void *NextHashElement(Lexer *lexer, Atom *atom) {
 	}
 	else {
 		atom->type = NOQUOTEMARK;
+		atom->value = (Slice) {lexer->start, 5};
 	}
 	return SEND_ATOM;
 }
@@ -69,9 +74,12 @@ static void *NextHashElement(Lexer *lexer, Atom *atom) {
 static void *FindNextHashElement(Lexer *lexer, Atom *atom) {
 	/*	skip all the nonsense till we find a comma	*/
 	atom->container = HASH;
-
-	char c = Fear(lexer, ",");
-	if(c == ',') return NextHashElement;
+	char c = Ignore(lexer, WHITESPACE);
+	if(c == ',') {
+		Next(lexer);
+		Ditch(lexer);
+		return NextHashElement;
+	}
 
 	atom->type = ENDOFSTRING;
 	return SEND_ATOM;
@@ -95,20 +103,7 @@ void *Identify(Lexer *lexer, Atom *atom) {
 	return SEND_ATOM;
 }
 
-void freeatom(Atom *atom) {
-	if (atom->value) {
-		free(atom->value);
-		atom->value = NULL;
-	}
-
-	if (atom->key) {
-		free(atom->key);
-		atom->key = NULL;
-	}
-}
-
-
-Atomizer Atomize(char *src, Atomizer (*callback)(Atom *)) {
+Atomizer Atomize(char *src, Atomizer (*callback)(Atom)) {
 	if(!callback) return WHYBOTHER;
 
 	Lexer *lexer = NewLexer(src);
@@ -116,20 +111,18 @@ Atomizer Atomize(char *src, Atomizer (*callback)(Atom *)) {
 
 	int status = CONTINUE;
 	while (status == CONTINUE) {	
-		Atom atom = {NOTSET, NOTSET, NULL, NULL};
+		Atom atom = {NOTSET, NOTSET, {NULL, 0}, {NULL, 0}};
 		for (; grammar; grammar = grammar(lexer, &atom));
-		status = callback(&atom);
+		status = callback(atom);
 
 		/*	we bust out if the atom type is an exit code	*/
 		if (IS_ERROR(atom.type)) {
 			status = BREAK;	
 		}
 		else if (status == CONTINUE) {
-			if (atom.container == HASH) grammar = NextHashElement;
+			if (atom.container == HASH) grammar = FindNextHashElement;
 			else if(atom.container == LIST) puts("NextArrayElement");
 		}
-
-		freeatom(&atom); 
 	}
 
 	free(lexer);

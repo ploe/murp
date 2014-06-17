@@ -10,7 +10,8 @@
 
 typedef struct Lexer {
 	char *src, *start;
-	unsigned int len;
+	unsigned int last, len;
+	Datatype container;
 } Lexer;
 
 /*	Lexer methods	*/
