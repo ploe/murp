@@ -67,7 +67,8 @@ enum {
 	the value is.
 
 	This means we can parse it with our Atomizer function.		*/
-Atomizer Atomize(char *src, Atomizer (*callback)(Atom));
+Atomizer Probe(char *src, Atomizer (*callback)(Atom, void *), void *);
+#define Atomize(src, callback) Probe(src, callback, NULL)
 
 /*	public macros	*/
 

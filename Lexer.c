@@ -1,4 +1,5 @@
 #include "privates.h"
+#define LEXER_OVERFLOW(l) (l->last && (l->len > l->last))
 
 Lexer *NewLexer(char *src) {
 	Lexer *lexer = malloc(sizeof(Lexer));
@@ -12,6 +13,12 @@ Lexer *NewLexer(char *src) {
 char Next(Lexer *lexer) {
 	char c = *(lexer->start + lexer->len);
 	lexer->len += 1;
+
+	if (LEXER_OVERFLOW(lexer)) {
+		lexer->len = lexer->last;
+		return '\0';
+	}
+
 	return c;
 }
 

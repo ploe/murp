@@ -103,7 +103,7 @@ void *Identify(Lexer *lexer, Atom *atom) {
 	return SEND_ATOM;
 }
 
-Atomizer Atomize(char *src, Atomizer (*callback)(Atom)) {
+Atomizer Probe(char *src, Atomizer (*callback)(Atom, void *), void *probe) {
 	if(!callback) return WHYBOTHER;
 
 	Lexer *lexer = NewLexer(src);
@@ -113,7 +113,7 @@ Atomizer Atomize(char *src, Atomizer (*callback)(Atom)) {
 	while (status == CONTINUE) {	
 		Atom atom = {NOTSET, NOTSET, {NULL, 0}, {NULL, 0}};
 		for (; grammar; grammar = grammar(lexer, &atom));
-		status = callback(atom);
+		status = callback(atom, probe);
 
 		/*	we bust out if the atom type is an exit code	*/
 		if (IS_ERROR(atom.type)) {

@@ -38,7 +38,7 @@ void *get_callback(callback_t *c) {
 	return NULL;
 }
 
-Atomizer print_atom(Atom atom) {
+Atomizer print_atom(Atom atom, void *p) {
 	printf("Atom {\n\tDatatype:\t%d\n\tContainer:\t%d\n\tKey:\t\t", atom.type, atom.container);
 	int i;
 	for (i = 0; i < atom.key.len; i++) {
