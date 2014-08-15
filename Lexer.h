@@ -6,17 +6,24 @@
 	legibility because the values could be obtained by directly 
 	fussing with start and len.
 
-	The Grammar module is what uses the Lexer. */
+	The Grammar module is what uses the Lexer.
+
+	Delimiters are the delimiters we've counted in 
+	the current parsed object	*/
+typedef struct Delimiter {
+	unsigned int open, closed;
+} Delimiter;
 
 typedef struct Lexer {
 	char *src, *start;
 	unsigned int last, len;
+	Delimiter quotes, curlies, squares;
 	Datatype container;
 } Lexer;
 
 /*	Lexer methods	*/
 
-Lexer *NewLexer(char *src);
+Lexer NewLexer(char *src, unsigned int last);
 char Next(Lexer *lexer);
 char Prev(Lexer *lexer);
 char Peek(Lexer *lexer);

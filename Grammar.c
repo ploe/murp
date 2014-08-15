@@ -27,12 +27,36 @@ static void *GetStringValue(Lexer *lexer, Atom *atom) {
 	return SEND_ATOM;
 }
 
+static void *GetContainerValue(Lexer *lexer, Atom *atom) {
+	char c = Fear(lexer, "{}[]\"");
+	if (c == '\"') {
+		if (PrevSteps(lexer, 2) != '\\') {
+			if (lexer->quotes.open == lexer->quotes.closed) lexer->quotes.open += 1;
+			else lexer->quotes.closed += 1;
+		}
+	}
+	if (lexer->quotes.open > lexer->quotes.closed) return GetContainerValue;
+
+	if (c == '{') lexer->curlies.open += 1;
+	else if (c == '}') lexer->curlies.closed += 1;
+	else if (c == '[') lexer->squares.open += 1;
+	else if (c == ']') lexer->squares.closed += 1;
+
+	if(AllDelimited(lexer)) {
+		return SEND_ATOM;
+	}
+}
+
 static void *GetValue(Lexer *lexer, Atom *atom) {
 	char c = Ignore(lexer, WHITESPACE);
 
 	if (c == '\"') {
 		Ditch(lexer);
 		return GetStringValue;
+	}
+	else if (c == '{') {
+		Ditch(lexer);
+		return GetValue;
 	}
 
 	atom->type = NONSENSE;
@@ -54,7 +78,7 @@ static void *GetKeyBody(Lexer *lexer, Atom *atom) {
 	return SEND_ATOM;
 }
 
-static void *NextHashElement(Lexer *lexer, Atom *atom) {
+static void *NextObjectElement(Lexer *lexer, Atom *atom) {
 	char c = Ignore(lexer, WHITESPACE);
 
 	if (c == '\"') {
@@ -71,14 +95,14 @@ static void *NextHashElement(Lexer *lexer, Atom *atom) {
 	return SEND_ATOM;
 }
 
-static void *FindNextHashElement(Lexer *lexer, Atom *atom) {
+static void *FindNextObjectElement(Lexer *lexer, Atom *atom) {
 	/*	skip all the nonsense till we find a comma	*/
-	atom->container = HASH;
+	atom->container = OBJECT;
 	char c = Ignore(lexer, WHITESPACE);
 	if(c == ',') {
 		Next(lexer);
 		Ditch(lexer);
-		return NextHashElement;
+		return NextObjectElement;
 	}
 
 	atom->type = ENDOFSTRING;
@@ -92,8 +116,8 @@ void *Identify(Lexer *lexer, Atom *atom) {
 	Ditch(lexer);
 	switch(c) {
 		case '{':
-			atom->container = HASH;
-			return NextHashElement;	
+			atom->container = OBJECT;
+			return NextObjectElement;	
 		break;
 
 		case '[': puts("parse array"); break;
@@ -103,12 +127,10 @@ void *Identify(Lexer *lexer, Atom *atom) {
 	return SEND_ATOM;
 }
 
-Atomizer Probe(char *src, Atomizer (*callback)(Atom, void *), void *probe) {
+Atomizer lex(Lexer *lexer, Atomizer (*callback)(Atom, void *), void *probe) {
 	if(!callback) return WHYBOTHER;
 
-	Lexer *lexer = NewLexer(src);
-	void * (*grammar)(Lexer *, Atom *) = Identify;
-
+	void * (*grammar)(Lexer *, Atom *) = Identify;	
 	int status = CONTINUE;
 	while (status == CONTINUE) {	
 		Atom atom = {NOTSET, NOTSET, {NULL, 0}, {NULL, 0}};
@@ -120,11 +142,20 @@ Atomizer Probe(char *src, Atomizer (*callback)(Atom, void *), void *probe) {
 			status = BREAK;	
 		}
 		else if (status == CONTINUE) {
-			if (atom.container == HASH) grammar = FindNextHashElement;
-			else if(atom.container == LIST) puts("NextArrayElement");
+			if (atom.container == OBJECT) grammar = FindNextObjectElement;
+			else if(atom.container == ARRAY) puts("NextArrayElement");
 		}
 	}
 
-	free(lexer);
 	return status;
+} 
+
+Atomizer ProbeSlice(Slice *src, Atomizer (*callback)(Atom, void *), void *probe) {
+	Lexer lexer = NewLexer(src->start, src->len);
+	return lex(&lexer, callback, probe);
+}
+
+Atomizer Probe(char *src, Atomizer (*callback)(Atom, void *), void *probe) {
+	Lexer lexer = NewLexer(src, 0);
+	return lex(&lexer, callback, probe);
 }

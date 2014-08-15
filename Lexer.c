@@ -1,10 +1,11 @@
 #include "privates.h"
 #define LEXER_OVERFLOW(l) (l->last && (l->len > l->last))
 
-Lexer *NewLexer(char *src) {
-	Lexer *lexer = malloc(sizeof(Lexer));
-	lexer->src = lexer->start = src;
-	lexer->len = 0;
+Lexer NewLexer(char *src, unsigned int last) {
+	Lexer lexer;
+	lexer.src = lexer.start = src;
+	lexer.last = last;
+	lexer.len = 0;
 
 	return lexer;
 }
@@ -24,11 +25,13 @@ char Next(Lexer *lexer) {
 
 // look back at the last letter
 char Prev(Lexer *lexer) {
+	if (lexer->len <= 0) return '\0';
 	return *(lexer->start + lexer->len - 1);
 }
 
 // Peek takes a little look-ahead so we know what the next letter is
 char Peek(Lexer *lexer) {
+	if (lexer->last && ((lexer->len + 1) > lexer->last)) return '\0';
 	return *(lexer->start + lexer->len);
 }
 
@@ -71,4 +74,17 @@ char Fear(Lexer *lexer, char *valid) {
 void Ditch(Lexer *lexer) {
 	lexer->start += lexer->len;
 	lexer->len = 0;
+}
+
+int AllDelimited(Lexer *lexer) {
+	return (
+		(lexer->quotes.open == lexer->quotes.closed) &&
+		(lexer->curlies.open == lexer->curlies.closed) &&
+		(lexer->squares.open == lexer->squares.closed)
+	);
+}
+
+Datatype DelimitMatch(Lexer *lexer) {
+	putchar(*(lexer->start));	
+	putchar(*(lexer->start+lexer->len));	
 }

@@ -54,8 +54,24 @@ Atomizer print_atom(Atom atom, void *p) {
 	return CONTINUE;
 }
 
+Atomizer count_elems(Atom atom, void *probe) {
+	if(IS_ERROR(atom.type)) return BREAK;
+	
+	int *count = probe;
+	*count += 1;
+
+	return CONTINUE;
+}
+
 int main(int argc, char *argv[]) {
-	Atomize("{\"vix is teh sex\":\"SHE SURE IS SCAMP\", \"NUSHNUSH\":\"STRING\", \"well what do we have here\"    :      \"HOT men steal trunks\"}", print_atom);
+	char *json = "{\"vix is teh sex\":\"SHE SURE IS SCAMP\", \"NUSHNUSH\":\"STRING\", \"well what do we have here\"    :      \"HOT men steal trunks\"}";
+
+	Atomize(json, print_atom);
+
+	int counter = 0;
+	Probe(json, count_elems, &counter);
+
+	printf("I counted %d elements in this string.\n", counter);
 //	callback_t callbacks[] = {
 //		{"token", NULL}, 
 //		{"token2", NULL}
