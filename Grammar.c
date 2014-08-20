@@ -10,11 +10,25 @@ char *Store(Lexer *lexer) {
 	return str;
 }
 
-Slice Dispatch(Lexer *lexer) {
+Slice DispatchString(Lexer *lexer) {
 	Slice val = {lexer->start, lexer->len - 1};
 	Ditch(lexer);
 
 	return val;
+}
+
+Slice DispatchContainer(Lexer *lexer) {
+	Slice val = {lexer->start - 1, lexer->len+1};
+        Ditch(lexer);
+
+        return val;
+}
+
+Slice DispatchCustom(Lexer *lexer, char *start, unsigned int len) {
+	Slice val = {start, len};
+        Ditch(lexer);
+
+        return val;
 }
 
 static void *GetStringValue(Lexer *lexer, Atom *atom) {
@@ -23,10 +37,11 @@ static void *GetStringValue(Lexer *lexer, Atom *atom) {
 	}
 	
 	atom->type = STRING;
-	atom->value = Dispatch(lexer);
+	atom->value = DispatchString(lexer);
 	return SEND_ATOM;
 }
 
+/* Hm... this code smells a little funky... */
 static void *GetContainerValue(Lexer *lexer, Atom *atom) {
 	char c = Fear(lexer, "{}[]\"");
 	if (c == '\"') {
@@ -42,9 +57,26 @@ static void *GetContainerValue(Lexer *lexer, Atom *atom) {
 	else if (c == '[') lexer->squares.open += 1;
 	else if (c == ']') lexer->squares.closed += 1;
 
-	if(AllDelimited(lexer)) {
+	DelimitMatch(lexer);
+	if (AllDelimited(lexer)) {
+		if (DelimitMatch(lexer) == atom->type) {
+			atom->value = DispatchContainer(lexer);
+		}
+		else {
+			atom->type = MANGLEDCONTAINER;
+			atom->value = DispatchContainer(lexer);
+		}
+
 		return SEND_ATOM;
 	}
+
+	if (END_OF_STRING(c)) {
+		atom->type = UNFINISHEDVALUE;
+		atom->value = DispatchCustom(lexer, lexer->start-1, lexer->len);
+                return SEND_ATOM;
+	}
+	
+	return GetContainerValue;
 }
 
 static void *GetValue(Lexer *lexer, Atom *atom) {
@@ -56,7 +88,15 @@ static void *GetValue(Lexer *lexer, Atom *atom) {
 	}
 	else if (c == '{') {
 		Ditch(lexer);
-		return GetValue;
+		atom->type = OBJECT;
+		lexer->curlies.open += 1;
+		return GetContainerValue;
+	}
+	else if (c == '[') {
+		Ditch(lexer);
+                atom->type = ARRAY;
+                lexer->squares.open += 1;
+                return GetContainerValue;
 	}
 
 	atom->type = NONSENSE;
@@ -67,7 +107,7 @@ static void *GetKeyBody(Lexer *lexer, Atom *atom) {
 	Fear(lexer, "\"");
 	if (PrevSteps(lexer, 2) == '\\') return *GetKeyBody;
 
-	atom->key = Dispatch(lexer);
+	atom->key = DispatchString(lexer);
 	
 	char c = Ignore(lexer, WHITESPACE);
 	switch (c) {
@@ -120,7 +160,8 @@ void *Identify(Lexer *lexer, Atom *atom) {
 			return NextObjectElement;	
 		break;
 
-		case '[': puts("parse array"); break;
+		case '[': puts("parse array");
+		break;
 	}
 	
 	atom->type = ENDOFSTRING; 

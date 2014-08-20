@@ -31,6 +31,8 @@ char PrevSteps(Lexer *lexer, unsigned int steps);
 char Ignore(Lexer *lexer, char *valid);
 char Fear(Lexer *lexer, char *valid);
 void Ditch(Lexer *lexer);
+int AllDelimited(Lexer *lexer);
+Datatype DelimitMatch(Lexer *lexer);
 
 /* Lexer macros	*/
 

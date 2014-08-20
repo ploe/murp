@@ -7,6 +7,10 @@ Lexer NewLexer(char *src, unsigned int last) {
 	lexer.last = last;
 	lexer.len = 0;
 
+	lexer.quotes.open = lexer.quotes.closed = 0;
+	lexer.curlies.open = lexer.curlies.closed = 0;
+	lexer.squares.open = lexer.squares.closed = 0;
+
 	return lexer;
 }
 
@@ -85,6 +89,11 @@ int AllDelimited(Lexer *lexer) {
 }
 
 Datatype DelimitMatch(Lexer *lexer) {
-	putchar(*(lexer->start));	
-	putchar(*(lexer->start+lexer->len));	
+	char start = *(lexer->start-1);
+	char end = *(lexer->start+lexer->len-1);
+
+	if (start == '{' && end == '}') return OBJECT;
+	else if (start == '[' && end == ']') return ARRAY;
+
+	return NOTSET;	
 }
