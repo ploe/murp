@@ -64,7 +64,7 @@ Atomizer count_elems(Atom atom, void *probe) {
 }
 
 int main(int argc, char *argv[]) {
-	char *json = "{\"vix is teh sex\":\"SHE SURE IS SCAMP\", \"NUSHNUSH\": {12345[]}, \"ARRAY EXAMPLE\" : [],  \"well what do we have here\"    :      \"HOT men steal trunks\"}";
+	char *json = "{\"vix is teh sex\":\"SHE SURE IS SCAMP\", \"NUSHNUSH\": {12345[]\"}, \"ARRAY EXAMPLE\" : [],  \"well what do we have here\"    :      \"HOT men steal trunks\"}";
 
 	Atomize(json, print_atom);
 

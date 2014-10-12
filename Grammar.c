@@ -38,11 +38,12 @@ static void *GetStringValue(Lexer *lexer, Atom *atom) {
 	
 	atom->type = STRING;
 	atom->value = DispatchString(lexer);
+	puts("GetStringValue");
 	return SEND_ATOM;
 }
 
 /* Hm... this code smells a little funky... */
-static void *GetContainerValue(Lexer *lexer, Atom *atom) {
+/*static void *GetContainerValue(Lexer *lexer, Atom *atom) {
 	char c = Fear(lexer, "{}[]\"");
 	if (c == '\"') {
 		if (PrevSteps(lexer, 2) != '\\') {
@@ -78,6 +79,77 @@ static void *GetContainerValue(Lexer *lexer, Atom *atom) {
 	
 	return GetContainerValue;
 }
+*/
+
+static char NestedObject(Lexer *lexer, Atom *atom);
+static char NestedArray(Lexer *lexer, Atom *atom);
+static char NestedQuote(Lexer *lexer, Atom *atom);
+
+/*	inline because I don't want all these vars pushing to the stack 
+as we drill down in to the nested objects, I can imagine it could get 
+quite expensive	*/
+char NestedCallbacks(char c, Lexer *lexer, Atom *atom) {
+	switch(c) {
+                case '{':
+                        return NestedObject(lexer, atom);
+                break;
+
+                case '[':
+                        return NestedArray(lexer, atom);
+                break;
+
+                case '\"':
+                        return NestedQuote(lexer, atom);
+                break;
+        }
+
+	return Next(lexer);
+}
+
+#define OPEN_NESTED(c) ((c == '{') || (c == '[') || (c == '\"'))
+
+static void *GetObjectValue(Lexer *lexer, Atom *atom) {
+	char c = Fear(lexer, "{}[\"");
+	c = NestedCallbacks(c, lexer, atom);
+
+	if (END_OF_STRING(c)) {
+		atom->type = UNFINISHEDVALUE;
+		atom->value = DispatchCustom(lexer, lexer->start-1, lexer->len);
+	}
+	else if (c == '}') {
+		atom->value = DispatchContainer(lexer);
+	}
+
+	puts("GetObjectValue");
+	return SEND_ATOM;
+}
+
+static char NestedObject(Lexer *lexer, Atom *atom) {
+	char c;
+	do {
+		c = Fear(lexer, "{}[\"");
+		if (OPEN_NESTED(c)) c = NestedCallbacks(c, lexer, atom);
+	} while ((c != '}') && !(END_OF_STRING(c)));
+
+	return(Next(lexer));
+}
+
+static char NestedArray(Lexer *lexer, Atom *atom) {
+	char c;
+	do {
+		c = Fear(lexer, "{}[\"");
+		if (OPEN_NESTED(c)) c = NestedCallbacks(c, lexer, atom);
+	} while ((c != ']') && !(END_OF_STRING(c)));
+	return(Next(lexer));
+}
+
+static char NestedQuote(Lexer *lexer, Atom *atom) {
+	char c;
+	do {
+		c = Fear(lexer, "\"");
+	} while ((c != '\"') && !(END_OF_STRING(c)));
+	return(Next(lexer));
+}
 
 static void *GetValue(Lexer *lexer, Atom *atom) {
 	char c = Ignore(lexer, WHITESPACE);
@@ -90,14 +162,14 @@ static void *GetValue(Lexer *lexer, Atom *atom) {
 		Ditch(lexer);
 		atom->type = OBJECT;
 		lexer->curlies.open += 1;
-		return GetContainerValue;
+		return GetObjectValue;
 	}
-	else if (c == '[') {
+	/*else if (c == '[') {
 		Ditch(lexer);
                 atom->type = ARRAY;
                 lexer->squares.open += 1;
                 return GetContainerValue;
-	}
+	}*/
 
 	atom->type = NONSENSE;
 	return SEND_ATOM;	
@@ -132,6 +204,7 @@ static void *NextObjectElement(Lexer *lexer, Atom *atom) {
 		atom->type = NOQUOTEMARK;
 		atom->value = (Slice) {lexer->start, 5};
 	}
+	puts("nextObjectElement");
 	return SEND_ATOM;
 }
 
@@ -146,6 +219,7 @@ static void *FindNextObjectElement(Lexer *lexer, Atom *atom) {
 	}
 
 	atom->type = ENDOFSTRING;
+	puts("FindNextObjectElement");
 	return SEND_ATOM;
 }
 
@@ -165,6 +239,7 @@ void *Identify(Lexer *lexer, Atom *atom) {
 	}
 	
 	atom->type = ENDOFSTRING; 
+	puts("Identify");
 	return SEND_ATOM;
 }
 
@@ -177,7 +252,6 @@ Atomizer lex(Lexer *lexer, Atomizer (*callback)(Atom, void *), void *probe) {
 		Atom atom = {NOTSET, NOTSET, {NULL, 0}, {NULL, 0}};
 		for (; grammar; grammar = grammar(lexer, &atom));
 		status = callback(atom, probe);
-
 		/*	we bust out if the atom type is an exit code	*/
 		if (IS_ERROR(atom.type)) {
 			status = BREAK;	
@@ -197,6 +271,6 @@ Atomizer ProbeSlice(Slice *src, Atomizer (*callback)(Atom, void *), void *probe)
 }
 
 Atomizer Probe(char *src, Atomizer (*callback)(Atom, void *), void *probe) {
-	Lexer lexer = NewLexer(src, 0);
+	Lexer lexer = NewLexer(src, strlen(src));
 	return lex(&lexer, callback, probe);
 }
