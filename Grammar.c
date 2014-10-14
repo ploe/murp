@@ -38,49 +38,8 @@ static void *GetStringValue(Lexer *lexer, Atom *atom) {
 	
 	atom->type = STRING;
 	atom->value = DispatchString(lexer);
-	puts("GetStringValue");
 	return SEND_ATOM;
 }
-
-/* Hm... this code smells a little funky... */
-/*static void *GetContainerValue(Lexer *lexer, Atom *atom) {
-	char c = Fear(lexer, "{}[]\"");
-	if (c == '\"') {
-		if (PrevSteps(lexer, 2) != '\\') {
-			if (lexer->quotes.open == lexer->quotes.closed) lexer->quotes.open += 1;
-			else lexer->quotes.closed += 1;
-		}
-	}
-	if (lexer->quotes.open > lexer->quotes.closed) return GetContainerValue;
-
-	if (c == '{') lexer->curlies.open += 1;
-	else if (c == '}') lexer->curlies.closed += 1;
-	else if (c == '[') lexer->squares.open += 1;
-	else if (c == ']') lexer->squares.closed += 1;
-
-	DelimitMatch(lexer);
-	if (AllDelimited(lexer)) {
-		if (DelimitMatch(lexer) == atom->type) {
-			atom->value = DispatchContainer(lexer);
-		}
-		else {
-			atom->type = MANGLEDCONTAINER;
-			atom->value = DispatchContainer(lexer);
-		}
-
-		return SEND_ATOM;
-	}
-
-	if (END_OF_STRING(c)) {
-		atom->type = UNFINISHEDVALUE;
-		atom->value = DispatchCustom(lexer, lexer->start-1, lexer->len);
-                return SEND_ATOM;
-	}
-	
-	return GetContainerValue;
-}
-*/
-
 static char NestedObject(Lexer *lexer, Atom *atom);
 static char NestedArray(Lexer *lexer, Atom *atom);
 static char NestedQuote(Lexer *lexer, Atom *atom);
@@ -88,7 +47,7 @@ static char NestedQuote(Lexer *lexer, Atom *atom);
 /*	inline because I don't want all these vars pushing to the stack 
 as we drill down in to the nested objects, I can imagine it could get 
 quite expensive	*/
-char NestedCallbacks(char c, Lexer *lexer, Atom *atom) {
+inline char NestedCallbacks(char c, Lexer *lexer, Atom *atom) {
 	switch(c) {
                 case '{':
                         return NestedObject(lexer, atom);
@@ -120,7 +79,6 @@ static void *GetObjectValue(Lexer *lexer, Atom *atom) {
 		atom->value = DispatchContainer(lexer);
 	}
 
-	puts("GetObjectValue");
 	return SEND_ATOM;
 }
 
@@ -137,7 +95,7 @@ static char NestedObject(Lexer *lexer, Atom *atom) {
 static char NestedArray(Lexer *lexer, Atom *atom) {
 	char c;
 	do {
-		c = Fear(lexer, "{}[\"");
+		c = Fear(lexer, "{[]\"");
 		if (OPEN_NESTED(c)) c = NestedCallbacks(c, lexer, atom);
 	} while ((c != ']') && !(END_OF_STRING(c)));
 	return(Next(lexer));
@@ -204,7 +162,6 @@ static void *NextObjectElement(Lexer *lexer, Atom *atom) {
 		atom->type = NOQUOTEMARK;
 		atom->value = (Slice) {lexer->start, 5};
 	}
-	puts("nextObjectElement");
 	return SEND_ATOM;
 }
 
@@ -219,7 +176,6 @@ static void *FindNextObjectElement(Lexer *lexer, Atom *atom) {
 	}
 
 	atom->type = ENDOFSTRING;
-	puts("FindNextObjectElement");
 	return SEND_ATOM;
 }
 
@@ -239,7 +195,6 @@ void *Identify(Lexer *lexer, Atom *atom) {
 	}
 	
 	atom->type = ENDOFSTRING; 
-	puts("Identify");
 	return SEND_ATOM;
 }
 
