@@ -7,10 +7,6 @@ Lexer NewLexer(char *src, unsigned int last) {
 	lexer.last = last;
 	lexer.len = 0;
 
-	lexer.quotes.open = lexer.quotes.closed = 0;
-	lexer.curlies.open = lexer.curlies.closed = 0;
-	lexer.squares.open = lexer.squares.closed = 0;
-
 	return lexer;
 }
 
@@ -78,14 +74,6 @@ char Fear(Lexer *lexer, char *valid) {
 void Ditch(Lexer *lexer) {
 	lexer->start += lexer->len;
 	lexer->len = 0;
-}
-
-int AllDelimited(Lexer *lexer) {
-	return (
-		(lexer->quotes.open == lexer->quotes.closed) &&
-		(lexer->curlies.open == lexer->curlies.closed) &&
-		(lexer->squares.open == lexer->squares.closed)
-	);
 }
 
 Datatype DelimitMatch(Lexer *lexer) {

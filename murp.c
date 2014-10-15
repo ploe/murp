@@ -39,15 +39,9 @@ void *get_callback(callback_t *c) {
 }
 
 Atomizer print_atom(Atom atom, void *p) {
-	printf("Atom {\n\tDatatype:\t%d\n\tContainer:\t%d\n\tKey:\t\t", atom.type, atom.container);
-	int i;
-	for (i = 0; i < atom.key.len; i++) {
-		putchar(*(atom.key.start+i));
-	}
-	printf("\n\tValue:\t\t");
-	for (i = 0; i < atom.value.len; i++) {
-		putchar(*(atom.value.start+i));
-	}
+	printf("Atom {\n\tDatatype:\t%d\n\tContainer:\t%d\n", atom.type, atom.container);
+	printf("\tKey:\t%.*s\n", atom.key.len, atom.key.start);
+	printf("\tValue:\t%.*s\n", atom.value.len, atom.value.start);
 	puts("\n}\n");
 	
 	if(IS_ERROR(atom.type)) return BREAK;
@@ -64,7 +58,7 @@ Atomizer count_elems(Atom atom, void *probe) {
 }
 
 int main(int argc, char *argv[]) {
-	char *json = "{\"vix is teh sex\":\"SHE SURE IS SCAMP\", \"NUSHNUSH\": {12345[]\"}, \"ARRAY EXAMPLE\" : [],  \"well what do we have here\"    :      \"HOT men steal trunks\"}";
+	char *json = "{\"vix is teh sex\":\"SHE SURE IS SCAMP\", \"NUSHNUSH\": {\"hello\" : \"world\", \"nested array\" : [[1, 2, 3, 4], {}]}, \"ARRAY EXAMPLE\" : [{123}\"\"],  \"well what do we have here\"    :      \"HOT men steal trunks\"}";
 
 	Atomize(json, print_atom);
 

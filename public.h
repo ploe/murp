@@ -22,7 +22,7 @@ enum {
 	ENDOFSTRING,
 	NOQUOTEMARK,
 	NONSENSE,
-	UNFINISHEDVALUE,
+	EOVALUE,
 	MANGLEDCONTAINER,
 	END_OF_ERRORS,
 };
@@ -71,6 +71,9 @@ enum {
 	This means we can parse it with our Atomizer function.		*/
 Atomizer Probe(char *src, Atomizer (*callback)(Atom, void *), void *);
 #define Atomize(src, callback) Probe(src, callback, NULL)
+
+Atomizer ProbeSlice(Slice *src, Atomizer (*callback)(Atom, void *), void *probe);
+#define AtomizeSlice(src, callback) ProbeSlice(src, callback, NULL)
 
 /*	public macros	*/
 

@@ -42,16 +42,22 @@ The signature of your Atomizer function should be
 Atomizer foo(Atom, void *);
 ```
 
-And it can be called thusly
+And it can be called thusly:
 
 ```
-Atomize(json, atomizer);
+Atomize(json, foo);
 
-Probe(json, atomizer, probe);
+Probe(json, foo, probe);
 ```
 
 The first parameter is the Atom. For each Atom found in your JSON your atomizer is called on it. You can then unpack the value how you want to. There's no hash table eating up your precious memory and resources - just you and the data getting parsed, and a little room eaten up by the Lexer's state. It isn't overly sophisticated.
 
 If it encounters an error it'll throw it as an Atom so that your Atomizer can react to it. There a bunch of different errors. That allows you to decide how you're going to deal with it - does junk need deallocating?
 
-MURP_WHYBOTHER - The Lexer gives up before it starts because you didn't give it an Atomizer.
+MP_WHYBOTHER 	- 	The Lexer gives up before it starts because you didn't give it an Atomizer.
+MP_NONSENSE	- 	Generic error - shouldn't be thrown in final product
+MP_GIBBERISH 	-
+MP_EOKEY 	- 	Falls off the end of the string before it finished parsing the key
+MP_DUMBKEY 	-	Was expecting an open quote for JSON key, but got some other character
+MP_EOVALUE	-	Falls off the string before it finished parsing the value
+

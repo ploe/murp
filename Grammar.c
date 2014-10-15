@@ -1,5 +1,15 @@
 #include "privates.h"
 
+void dumpLexer(Lexer *lexer) {
+	puts("Lexer {");
+	printf("\tsrc:\t%s\n", lexer->src);
+	printf("\tbuff:\t%.*s\n", lexer->len, lexer->start);
+	printf("\tstart:\t%lu\n",  (lexer->start-lexer->src));
+	printf("\tlen:\t%d\n", lexer->len);
+	printf("\tnext:\t'%c'\n", Peek(lexer));
+	puts("}");
+}
+
 char *WHITESPACE = " \t\n\r\v\f";
 
 char *Store(Lexer *lexer) {
@@ -40,6 +50,7 @@ static void *GetStringValue(Lexer *lexer, Atom *atom) {
 	atom->value = DispatchString(lexer);
 	return SEND_ATOM;
 }
+
 static char NestedObject(Lexer *lexer, Atom *atom);
 static char NestedArray(Lexer *lexer, Atom *atom);
 static char NestedQuote(Lexer *lexer, Atom *atom);
@@ -62,20 +73,33 @@ inline char NestedCallbacks(char c, Lexer *lexer, Atom *atom) {
                 break;
         }
 
-	return Next(lexer);
+	return c;
 }
 
 #define OPEN_NESTED(c) ((c == '{') || (c == '[') || (c == '\"'))
 
 static void *GetObjectValue(Lexer *lexer, Atom *atom) {
-	char c = Fear(lexer, "{}[\"");
-	c = NestedCallbacks(c, lexer, atom);
+	char c = NestedObject(lexer, atom);
 
 	if (END_OF_STRING(c)) {
-		atom->type = UNFINISHEDVALUE;
+		atom->type = EOVALUE;
 		atom->value = DispatchCustom(lexer, lexer->start-1, lexer->len);
 	}
 	else if (c == '}') {
+		atom->value = DispatchContainer(lexer);
+	}
+
+	return SEND_ATOM;
+}
+
+static void *GetArrayValue(Lexer *lexer, Atom *atom) {
+	char c = NestedArray(lexer, atom);
+
+	if (END_OF_STRING(c)) {
+		atom->type = EOVALUE;
+		atom->value = DispatchCustom(lexer, lexer->start-1, lexer->len);
+	}
+	else if (c == ']') {
 		atom->value = DispatchContainer(lexer);
 	}
 
@@ -86,19 +110,26 @@ static char NestedObject(Lexer *lexer, Atom *atom) {
 	char c;
 	do {
 		c = Fear(lexer, "{}[\"");
-		if (OPEN_NESTED(c)) c = NestedCallbacks(c, lexer, atom);
+		if (OPEN_NESTED(c)) {
+			c = NestedCallbacks(c, lexer, atom);
+			if (c == '}') c = Next(lexer);
+		}
 	} while ((c != '}') && !(END_OF_STRING(c)));
 
-	return(Next(lexer));
+	return c;
 }
 
 static char NestedArray(Lexer *lexer, Atom *atom) {
 	char c;
 	do {
 		c = Fear(lexer, "{[]\"");
-		if (OPEN_NESTED(c)) c = NestedCallbacks(c, lexer, atom);
+		if (OPEN_NESTED(c)) {
+			c = NestedCallbacks(c, lexer, atom);
+			if (c == ']') c = Next(lexer);
+		}
 	} while ((c != ']') && !(END_OF_STRING(c)));
-	return(Next(lexer));
+
+	return c;
 }
 
 static char NestedQuote(Lexer *lexer, Atom *atom) {
@@ -106,7 +137,8 @@ static char NestedQuote(Lexer *lexer, Atom *atom) {
 	do {
 		c = Fear(lexer, "\"");
 	} while ((c != '\"') && !(END_OF_STRING(c)));
-	return(Next(lexer));
+
+	return c;
 }
 
 static void *GetValue(Lexer *lexer, Atom *atom) {
@@ -119,15 +151,13 @@ static void *GetValue(Lexer *lexer, Atom *atom) {
 	else if (c == '{') {
 		Ditch(lexer);
 		atom->type = OBJECT;
-		lexer->curlies.open += 1;
 		return GetObjectValue;
 	}
-	/*else if (c == '[') {
+	else if (c == '[') {
 		Ditch(lexer);
                 atom->type = ARRAY;
-                lexer->squares.open += 1;
-                return GetContainerValue;
-	}*/
+                return GetArrayValue;
+	}
 
 	atom->type = NONSENSE;
 	return SEND_ATOM;	

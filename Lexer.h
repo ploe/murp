@@ -17,7 +17,6 @@ typedef struct Delimiter {
 typedef struct Lexer {
 	char *src, *start;
 	unsigned int last, len;
-	Delimiter quotes, curlies, squares;
 	Datatype container;
 } Lexer;
 
