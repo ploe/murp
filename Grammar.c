@@ -54,11 +54,12 @@ static void *GetStringValue(Lexer *lexer, Atom *atom) {
 static char NestedObject(Lexer *lexer, Atom *atom);
 static char NestedArray(Lexer *lexer, Atom *atom);
 static char NestedQuote(Lexer *lexer, Atom *atom);
+inline char NestedCallbacks(char c, Lexer *lexer, Atom *atom); 
 
 /*	inline because I don't want all these vars pushing to the stack 
 as we drill down in to the nested objects, I can imagine it could get 
 quite expensive	*/
-inline char NestedCallbacks(char c, Lexer *lexer, Atom *atom) {
+char NestedCallbacks(char c, Lexer *lexer, Atom *atom) {
 	switch(c) {
                 case '{':
                         return NestedObject(lexer, atom);
