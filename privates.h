@@ -20,4 +20,6 @@ enum {
 	NO
 };
 
+#define _mp_SEND_ATOM NULL
+
 #endif

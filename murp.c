@@ -38,43 +38,32 @@ void *get_callback(callback_t *c) {
 	return NULL;
 }
 
-Atomizer print_atom(Atom atom, void *p) {
+mp_Atomizer print_atom(mp_Atom atom, void *p) {
 	printf("Atom {\n\tDatatype:\t%d\n\tContainer:\t%d\n", atom.type, atom.container);
 	printf("\tKey:\t%.*s\n", atom.key.len, atom.key.start);
 	printf("\tValue:\t%.*s\n", atom.value.len, atom.value.start);
 	puts("\n}\n");
 	
-	if(IS_ERROR(atom.type)) return BREAK;
-	return CONTINUE;
+	if(mp_IS_ERROR(atom.type)) return mp_BREAK;
+	return mp_CONTINUE;
 }
 
-Atomizer count_elems(Atom atom, void *probe) {
-	if(IS_ERROR(atom.type)) return BREAK;
+mp_Atomizer count_elems(mp_Atom atom, void *probe) {
+	if(mp_IS_ERROR(atom.type)) return mp_BREAK;
 	
 	int *count = probe;
 	*count += 1;
 
-	return CONTINUE;
+	return mp_CONTINUE;
 }
 
 int main(int argc, char *argv[]) {
 	char *json = "{\"vix is teh sex\":\"SHE SURE IS SCAMP\", \"NUSHNUSH\": {\"hello\" : \"world\", \"nested array\" : [[1, 2, 3, 4], {}]}, \"ARRAY EXAMPLE\" : [{123}\"\"],  \"well what do we have here\"    :      \"HOT men steal trunks\"}";
 
-	Atomize(json, print_atom);
+	mp_Atomize(json, print_atom);
 
 	int counter = 0;
-	Probe(json, count_elems, &counter);
+	mp_Probe(json, count_elems, &counter);
 
 	printf("I counted %d elements in this string.\n", counter);
-//	callback_t callbacks[] = {
-//		{"token", NULL}, 
-//		{"token2", NULL}
-//	};
-
-//	get_callback( (callback_t[]) {
-//		{"token", NULL}, 
-//      {"token2", NULL},
-//		{NULL, NULL}
-//	});
-
 }

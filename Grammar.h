@@ -1,8 +1,6 @@
 #ifndef MURP_GRAMMAR
 #define MURP_GRAMMAR
 
-void *Identify(Lexer *lexer, Atom *);
-
-extern char *WHITESPACE;
+extern char *_mp_WHITESPACE;
 
 #endif

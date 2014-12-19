@@ -10,31 +10,26 @@
 
 	Delimiters are the delimiters we've counted in 
 	the current parsed object	*/
-typedef struct Delimiter {
-	unsigned int open, closed;
-} Delimiter;
 
-typedef struct Lexer {
+typedef struct {
 	char *src, *start;
 	unsigned int last, len;
-	Datatype container;
-} Lexer;
+	mp_Datatype container;
+} _mp_Lexer;
 
 /*	Lexer methods	*/
 
-Lexer NewLexer(char *src, unsigned int last);
-char Next(Lexer *lexer);
-char Prev(Lexer *lexer);
-char Peek(Lexer *lexer);
-char PrevSteps(Lexer *lexer, unsigned int steps);
-char Ignore(Lexer *lexer, char *valid);
-char Fear(Lexer *lexer, char *valid);
-void Ditch(Lexer *lexer);
-int AllDelimited(Lexer *lexer);
-Datatype DelimitMatch(Lexer *lexer);
+_mp_Lexer NewLexer(char *src, unsigned int last);
+char _mp_Next(_mp_Lexer *lexer);
+char _mp_Prev(_mp_Lexer *lexer);
+char _mp_Peek(_mp_Lexer *lexer);
+char _mp_PrevSteps(_mp_Lexer *lexer, unsigned int steps);
+char _mp_Ignore(_mp_Lexer *lexer, char *valid);
+char _mp_Fear(_mp_Lexer *lexer, char *valid);
+void _mp_Ditch(_mp_Lexer *lexer);
 
 /* Lexer macros	*/
 
-#define END_OF_STRING(c) ((c == EOF) || (c == '\0'))
+#define _mp_END_OF_STRING(c) ((c == EOF) || (c == '\0'))
 
 #endif

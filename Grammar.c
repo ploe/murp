@@ -1,65 +1,65 @@
 #include "privates.h"
 
-void dumpLexer(Lexer *lexer) {
+void dumpLexer(_mp_Lexer *lexer) {
 	puts("Lexer {");
 	printf("\tsrc:\t%s\n", lexer->src);
 	printf("\tbuff:\t%.*s\n", lexer->len, lexer->start);
 	printf("\tstart:\t%lu\n",  (lexer->start-lexer->src));
 	printf("\tlen:\t%d\n", lexer->len);
-	printf("\tnext:\t'%c'\n", Peek(lexer));
+	printf("\tnext:\t'%c'\n", _mp_Peek(lexer));
 	puts("}");
 }
 
-char *WHITESPACE = " \t\n\r\v\f";
+char *_mp_WHITESPACE = " \t\n\r\v\f";
 
-char *Store(Lexer *lexer) {
+char *Store(_mp_Lexer *lexer) {
 	char *str = calloc(lexer->len + 1, sizeof(char));
 	strncpy(str, lexer->start, lexer->len - 1);
-	Ditch(lexer);
+	_mp_Ditch(lexer);
 
 	return str;
 }
 
-Slice DispatchString(Lexer *lexer) {
-	Slice val = {lexer->start, lexer->len - 1};
-	Ditch(lexer);
+mp_Slice DispatchString(_mp_Lexer *lexer) {
+	mp_Slice val = {lexer->start, lexer->len - 1};
+	_mp_Ditch(lexer);
 
 	return val;
 }
 
-Slice DispatchContainer(Lexer *lexer) {
-	Slice val = {lexer->start - 1, lexer->len+1};
-        Ditch(lexer);
+mp_Slice DispatchContainer(_mp_Lexer *lexer) {
+	mp_Slice val = {lexer->start - 1, lexer->len+1};
+	_mp_Ditch(lexer);
 
-        return val;
+	return val;
 }
 
-Slice DispatchCustom(Lexer *lexer, char *start, unsigned int len) {
-	Slice val = {start, len};
-        Ditch(lexer);
+mp_Slice DispatchCustom(_mp_Lexer *lexer, char *start, unsigned int len) {
+	mp_Slice val = {start, len};
+	_mp_Ditch(lexer);
 
-        return val;
+	return val;
 }
 
-static void *GetStringValue(Lexer *lexer, Atom *atom) {
-	Fear(lexer, "\"");
-	if (PrevSteps(lexer, 2) == '\\') {
+static void *GetStringValue(_mp_Lexer *lexer, mp_Atom *atom) {
+	_mp_Fear(lexer, "\"");
+	if (_mp_PrevSteps(lexer, 2) == '\\') {
 	}
 	
-	atom->type = STRING;
+	atom->type = mp_STRING;
 	atom->value = DispatchString(lexer);
-	return SEND_ATOM;
+	return _mp_SEND_ATOM;
 }
 
-static char NestedObject(Lexer *lexer, Atom *atom);
-static char NestedArray(Lexer *lexer, Atom *atom);
-static char NestedQuote(Lexer *lexer, Atom *atom);
-inline char NestedCallbacks(char c, Lexer *lexer, Atom *atom); 
+static char NestedObject(_mp_Lexer *lexer, mp_Atom *atom);
+static char NestedArray(_mp_Lexer *lexer, mp_Atom *atom);
+static char NestedQuote(_mp_Lexer *lexer, mp_Atom *atom);
+static inline char NestedCallbacks(char c, _mp_Lexer *lexer, mp_Atom *atom); 
 
 /*	inline because I don't want all these vars pushing to the stack 
 as we drill down in to the nested objects, I can imagine it could get 
 quite expensive	*/
-char NestedCallbacks(char c, Lexer *lexer, Atom *atom) {
+static inline char NestedCallbacks(char c, _mp_Lexer *lexer, mp_Atom *atom) {
 	switch(c) {
                 case '{':
                         return NestedObject(lexer, atom);
@@ -79,145 +79,153 @@ char NestedCallbacks(char c, Lexer *lexer, Atom *atom) {
 
 #define OPEN_NESTED(c) ((c == '{') || (c == '[') || (c == '\"'))
 
-static void *GetObjectValue(Lexer *lexer, Atom *atom) {
+static void *GetObjectValue(_mp_Lexer *lexer, mp_Atom *atom) {
 	char c = NestedObject(lexer, atom);
 
-	if (END_OF_STRING(c)) {
-		atom->type = EOVALUE;
+	if (_mp_END_OF_STRING(c)) {
+		atom->type = mp_EOVALUE;
 		atom->value = DispatchCustom(lexer, lexer->start-1, lexer->len);
 	}
 	else if (c == '}') {
 		atom->value = DispatchContainer(lexer);
 	}
 
-	return SEND_ATOM;
+	return _mp_SEND_ATOM;
 }
 
-static void *GetArrayValue(Lexer *lexer, Atom *atom) {
+static void *GetArrayValue(_mp_Lexer *lexer, mp_Atom *atom) {
 	char c = NestedArray(lexer, atom);
 
-	if (END_OF_STRING(c)) {
-		atom->type = EOVALUE;
+	if (_mp_END_OF_STRING(c)) {
+		atom->type = mp_EOVALUE;
 		atom->value = DispatchCustom(lexer, lexer->start-1, lexer->len);
 	}
 	else if (c == ']') {
 		atom->value = DispatchContainer(lexer);
 	}
 
-	return SEND_ATOM;
+	return _mp_SEND_ATOM;
 }
 
-static char NestedObject(Lexer *lexer, Atom *atom) {
+static char NestedObject(_mp_Lexer *lexer, mp_Atom *atom) {
 	char c;
 	do {
-		c = Fear(lexer, "{}[\"");
+		c = _mp_Fear(lexer, "{}[\"");
 		if (OPEN_NESTED(c)) {
 			c = NestedCallbacks(c, lexer, atom);
-			if (c == '}') c = Next(lexer);
+			if (c == '}') c = _mp_Next(lexer);
 		}
-	} while ((c != '}') && !(END_OF_STRING(c)));
+	} while ((c != '}') && !(_mp_END_OF_STRING(c)));
 
 	return c;
 }
 
-static char NestedArray(Lexer *lexer, Atom *atom) {
+static char NestedArray(_mp_Lexer *lexer, mp_Atom *atom) {
 	char c;
 	do {
-		c = Fear(lexer, "{[]\"");
+		c = _mp_Fear(lexer, "{[]\"");
 		if (OPEN_NESTED(c)) {
 			c = NestedCallbacks(c, lexer, atom);
-			if (c == ']') c = Next(lexer);
+			if (c == ']') c = _mp_Next(lexer);
 		}
-	} while ((c != ']') && !(END_OF_STRING(c)));
+	} while ((c != ']') && !(_mp_END_OF_STRING(c)));
 
 	return c;
 }
 
-static char NestedQuote(Lexer *lexer, Atom *atom) {
+static char NestedQuote(_mp_Lexer *lexer, mp_Atom *atom) {
 	char c;
 	do {
-		c = Fear(lexer, "\"");
-	} while ((c != '\"') && !(END_OF_STRING(c)));
+		c = _mp_Fear(lexer, "\"");
+	} while ((c != '\"') && !(_mp_END_OF_STRING(c)));
 
 	return c;
 }
 
-static void *GetValue(Lexer *lexer, Atom *atom) {
-	char c = Ignore(lexer, WHITESPACE);
+static void *GetValue(_mp_Lexer *lexer, mp_Atom *atom) {
+	char c = _mp_Ignore(lexer, _mp_WHITESPACE);
 
 	if (c == '\"') {
-		Ditch(lexer);
+		_mp_Ditch(lexer);
 		return GetStringValue;
 	}
 	else if (c == '{') {
-		Ditch(lexer);
-		atom->type = OBJECT;
+		_mp_Ditch(lexer);
+		atom->type = mp_OBJECT;
 		return GetObjectValue;
 	}
 	else if (c == '[') {
-		Ditch(lexer);
-                atom->type = ARRAY;
-                return GetArrayValue;
+		_mp_Ditch(lexer);
+		atom->type = mp_ARRAY;
+		return GetArrayValue;
 	}
 
-	atom->type = NONSENSE;
-	return SEND_ATOM;	
+	atom->type = mp_EOVALUE;
+	return _mp_SEND_ATOM;	
 }
 
-static void *GetKeyBody(Lexer *lexer, Atom *atom) {
-	Fear(lexer, "\"");
-	if (PrevSteps(lexer, 2) == '\\') return *GetKeyBody;
+static void *GetKeyBody(_mp_Lexer *lexer, mp_Atom *atom) {
+	_mp_Fear(lexer, "\"");
+	if (_mp_PrevSteps(lexer, 2) == '\\') return *GetKeyBody;
 
 	atom->key = DispatchString(lexer);
 	
-	char c = Ignore(lexer, WHITESPACE);
+	char c = _mp_Ignore(lexer, _mp_WHITESPACE);
 	switch (c) {
 		case ':': return GetValue; break;
 	}
 
-	atom->type = NONSENSE;
-	return SEND_ATOM;
+	atom->type = mp_EOKEY;
+	return _mp_SEND_ATOM;
 }
 
-static void *NextObjectElement(Lexer *lexer, Atom *atom) {
-	char c = Ignore(lexer, WHITESPACE);
+static void *NextObjectElement(_mp_Lexer *lexer, mp_Atom *atom) {
+	char c = _mp_Ignore(lexer, _mp_WHITESPACE);
 
 	if (c == '\"') {
-		Ditch(lexer);
+		_mp_Ditch(lexer);
 		return GetKeyBody;
 	}
-	else if(END_OF_STRING(c) || c == '}') {
-		atom->type = ENDOFSTRING;
+	else if (_mp_END_OF_STRING(c)) {
+		atom->type = mp_EOSTRUCT;
+	}
+	else if (c == '}') {
+		atom->type = mp_DONE;
 	}
 	else {
-		atom->type = NOQUOTEMARK;
-		atom->value = (Slice) {lexer->start, 5};
+		atom->type = mp_EOKEY;
+		atom->value = (mp_Slice) {lexer->start, 5};
 	}
-	return SEND_ATOM;
+	return _mp_SEND_ATOM;
 }
 
-static void *FindNextObjectElement(Lexer *lexer, Atom *atom) {
+static void *FindNextObjectElement(_mp_Lexer *lexer, mp_Atom *atom) {
 	/*	skip all the nonsense till we find a comma	*/
-	atom->container = OBJECT;
-	char c = Ignore(lexer, WHITESPACE);
+	atom->container = mp_OBJECT;
+	char c = _mp_Ignore(lexer, _mp_WHITESPACE);
 	if(c == ',') {
-		Next(lexer);
-		Ditch(lexer);
+		_mp_Next(lexer);
+		_mp_Ditch(lexer);
 		return NextObjectElement;
 	}
+	else if(c == '}') {
+		atom->type = mp_DONE;
+	}
+	else {
+		atom->type = mp_EOSTRUCT;
+	}
 
-	atom->type = ENDOFSTRING;
-	return SEND_ATOM;
+	return _mp_SEND_ATOM;
 }
 
-void *Identify(Lexer *lexer, Atom *atom) {
+static void *Identify(_mp_Lexer *lexer, mp_Atom *atom) {
 	// ignore all trailing whitespace
-	char c = Ignore(lexer, WHITESPACE);
+	char c = _mp_Ignore(lexer, _mp_WHITESPACE);
 
-	Ditch(lexer);
+	_mp_Ditch(lexer);
 	switch(c) {
 		case '{':
-			atom->container = OBJECT;
+			atom->container = mp_OBJECT;
 			return NextObjectElement;	
 		break;
 
@@ -225,38 +233,38 @@ void *Identify(Lexer *lexer, Atom *atom) {
 		break;
 	}
 	
-	atom->type = ENDOFSTRING; 
-	return SEND_ATOM;
+	atom->type = mp_EOSTRUCT; 
+	return _mp_SEND_ATOM;
 }
 
-Atomizer lex(Lexer *lexer, Atomizer (*callback)(Atom, void *), void *probe) {
-	if(!callback) return WHYBOTHER;
+mp_Atomizer lex(_mp_Lexer *lexer, mp_Atomizer (*callback)(mp_Atom, void *), void *probe) {
+	if(!callback) return mp_WHYBOTHER;
 
-	void * (*grammar)(Lexer *, Atom *) = Identify;	
-	int status = CONTINUE;
-	while (status == CONTINUE) {	
-		Atom atom = {NOTSET, NOTSET, {NULL, 0}, {NULL, 0}};
+	void * (*grammar)(_mp_Lexer *, mp_Atom *) = Identify;	
+	int status = mp_CONTINUE;
+	while (status == mp_CONTINUE) {	
+		mp_Atom atom = {mp_NOTSET, mp_NOTSET, {NULL, 0}, {NULL, 0}};
 		for (; grammar; grammar = grammar(lexer, &atom));
 		status = callback(atom, probe);
 		/*	we bust out if the atom type is an exit code	*/
-		if (IS_ERROR(atom.type)) {
-			status = BREAK;	
+		if (mp_IS_ERROR(atom.type)) {
+			status = mp_BREAK;	
 		}
-		else if (status == CONTINUE) {
-			if (atom.container == OBJECT) grammar = FindNextObjectElement;
-			else if(atom.container == ARRAY) puts("NextArrayElement");
+		else if (status == mp_CONTINUE) {
+			if (atom.container == mp_OBJECT) grammar = FindNextObjectElement;
+			else if(atom.container == mp_ARRAY) puts("NextArrayElement");
 		}
 	}
 
 	return status;
 } 
 
-Atomizer ProbeSlice(Slice *src, Atomizer (*callback)(Atom, void *), void *probe) {
-	Lexer lexer = NewLexer(src->start, src->len);
+mp_Atomizer mp_ProbeSlice(mp_Slice *src, mp_Atomizer (*callback)(mp_Atom, void *), void *probe) {
+	_mp_Lexer lexer = NewLexer(src->start, src->len);
 	return lex(&lexer, callback, probe);
 }
 
-Atomizer Probe(char *src, Atomizer (*callback)(Atom, void *), void *probe) {
-	Lexer lexer = NewLexer(src, strlen(src));
+mp_Atomizer mp_Probe(char *src, mp_Atomizer (*callback)(mp_Atom, void *), void *probe) {
+	_mp_Lexer lexer = NewLexer(src, strlen(src));
 	return lex(&lexer, callback, probe);
 }

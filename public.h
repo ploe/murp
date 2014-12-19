@@ -8,23 +8,22 @@
 
 /*	public types	*/
 
-typedef int Datatype;
+typedef int mp_Datatype;
 enum {
-	NOTSET,
-	NIL,
-	STRING,
-	NUMBER,
-	BOOLEAN,
-	OBJECT,
-	ARRAY,
+	mp_NOTSET,
+	mp_NULL,
+	mp_STRING,
+	mp_NUMBER,
+	mp_BOOLEAN,
+	mp_OBJECT,
+	mp_ARRAY,
 
-	ERRORS = 100,
-	ENDOFSTRING,
-	NOQUOTEMARK,
-	NONSENSE,
-	EOVALUE,
-	MANGLEDCONTAINER,
-	END_OF_ERRORS,
+	_mp_ERRORS = 9000,
+	mp_DONE,
+	mp_EOSTRUCT,
+	mp_EOKEY,
+	mp_EOVALUE,
+	_mp_END_OF_ERRORS,
 };
 
 /*	The Atom is what murp throws out on each iteration. It represents
@@ -41,24 +40,24 @@ enum {
 	key and value are C strings containing the values we ripped out of the
 	object we're lexing.	*/
 
-typedef struct Slice {
+typedef struct {
 	char *start;
 	unsigned int len;
-} Slice;
+} mp_Slice;
 
-typedef struct Atom {
-	Datatype type, container;
-	Slice key, value;
-} Atom;
+typedef struct {
+	mp_Datatype type, container;
+	mp_Slice key, value;
+} mp_Atom;
 
 /*	Status codes that our Atomizer function can yield. This tells the
 	Lexer what to do, whether to keep on parsing or break.	*/
-typedef int Atomizer;
+typedef int mp_Atomizer;
 enum {
-	CONTINUE,
-	BREAK,
-	FAIL,
-	WHYBOTHER,
+	mp_CONTINUE,
+	mp_BREAK,
+	mp_FAIL,
+	mp_WHYBOTHER,
 };
 
 /*	public functions	*/
@@ -69,15 +68,14 @@ enum {
 	the value is.
 
 	This means we can parse it with our Atomizer function.		*/
-Atomizer Probe(char *src, Atomizer (*callback)(Atom, void *), void *);
-#define Atomize(src, callback) Probe(src, callback, NULL)
+mp_Atomizer mp_Probe(char *src, mp_Atomizer (*callback)(mp_Atom, void *), void *);
+#define mp_Atomize(src, callback) mp_Probe(src, callback, NULL)
 
-Atomizer ProbeSlice(Slice *src, Atomizer (*callback)(Atom, void *), void *probe);
-#define AtomizeSlice(src, callback) ProbeSlice(src, callback, NULL)
+mp_Atomizer mp_ProbeSlice(mp_Slice *src, mp_Atomizer (*callback)(mp_Atom, void *), void *probe);
+#define mp_AtomizeSlice(src, callback) mp_ProbeSlice(src, callback, NULL)
 
 /*	public macros	*/
 
-#define IS_ERROR(i) ((i > ERRORS) && (i < END_OF_ERRORS))
-#define SEND_ATOM NULL
+#define mp_IS_ERROR(i) ((i > _mp_ERRORS) && (i < _mp_END_OF_ERRORS))
 
 #endif
