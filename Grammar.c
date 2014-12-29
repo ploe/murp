@@ -41,6 +41,15 @@ mp_Slice DispatchCustom(_mp_Lexer *lexer, char *start, unsigned int len) {
 	return val;
 }
 
+mp_Slice DispatchPattern(_mp_Lexer *lexer, char *value) {
+	unsigned int len = strlen(value);
+    mp_Slice val = {lexer->start-1, len};
+	lexer->len += len-1;
+    _mp_Ditch(lexer);
+
+    return val;
+}
+
 static void *GetStringValue(_mp_Lexer *lexer, mp_Atom *atom) {
 	_mp_Fear(lexer, "\"");
 	if (_mp_PrevSteps(lexer, 2) == '\\') {
@@ -50,6 +59,15 @@ static void *GetStringValue(_mp_Lexer *lexer, mp_Atom *atom) {
 	atom->value = DispatchString(lexer);
 	return _mp_SEND_ATOM;
 }
+
+static void *GetBooleanValue(_mp_Lexer *lexer, mp_Atom *atom) {
+	if (_mp_Match(lexer, "true")) atom->value = DispatchPattern(lexer, "true");
+	else if (_mp_Match(lexer, "false")) atom->value = DispatchPattern(lexer, "false");
+
+	else atom->type = mp_EOVALUE;
+	return _mp_SEND_ATOM;
+}
+
 
 static char NestedObject(_mp_Lexer *lexer, mp_Atom *atom);
 static char NestedArray(_mp_Lexer *lexer, mp_Atom *atom);
@@ -159,6 +177,20 @@ static void *GetValue(_mp_Lexer *lexer, mp_Atom *atom) {
 		atom->type = mp_ARRAY;
 		return GetArrayValue;
 	}
+	else if (c == 't' || c == 'f') {
+		_mp_Ditch(lexer);
+		atom->type = mp_BOOLEAN;
+		return GetBooleanValue;
+	}
+	else if (c == 'n') {
+		 _mp_Ditch(lexer);
+		 atom->type = mp_NULL;
+		if (_mp_Match(lexer, "null")) { 
+			atom->value = DispatchPattern(lexer, "null");
+			return _mp_SEND_ATOM;
+		}
+	}
+	
 
 	atom->type = mp_EOVALUE;
 	return _mp_SEND_ATOM;	

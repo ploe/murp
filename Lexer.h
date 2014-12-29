@@ -26,6 +26,7 @@ char _mp_Peek(_mp_Lexer *lexer);
 char _mp_PrevSteps(_mp_Lexer *lexer, unsigned int steps);
 char _mp_Ignore(_mp_Lexer *lexer, char *valid);
 char _mp_Fear(_mp_Lexer *lexer, char *valid);
+int _mp_Match(_mp_Lexer *lexer, char *valid);
 void _mp_Ditch(_mp_Lexer *lexer);
 
 /* Lexer macros	*/

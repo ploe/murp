@@ -70,6 +70,11 @@ char _mp_Fear(_mp_Lexer *lexer, char *valid) {
 	return _mp_Prev(lexer);
 }
 
+int _mp_Match(_mp_Lexer *lexer, char *valid) {
+	/*  start-1 so we can match patterns "true", "false" and "null" */
+	return !(strncmp(valid, lexer->start-1, strlen(valid)));
+}
+
 /* moves the lexer's forward */
 void _mp_Ditch(_mp_Lexer *lexer) {
 	lexer->start += lexer->len;

@@ -58,7 +58,8 @@ mp_Atomizer count_elems(mp_Atom atom, void *probe) {
 }
 
 int main(int argc, char *argv[]) {
-	char *json = "{\"vix is teh sex\":\"SHE SURE IS SCAMP\", \"NUSHNUSH\": {\"hello\" : \"world\", \"nested array\" : [[1, 2, 3, 4], {}]}, \"ARRAY EXAMPLE\" : [{123}\"\"],  \"well what do we have here\"    :      \"HOT men steal trunks\"}";
+	char *json = "{\"dis be trooo\" : true, \"dix bwe fuls\" : false, \"vix is teh sex\":\"SHE SURE IS SCAMP\", \"NUSHNUSH\": {\"hello\" : \"world\", \"nested array\" : [[1, 2, 3, 4], {}]}, \"ARRAY EXAMPLE\" : [{123}\"\"],  \"well what do we have here\"    :      \"HOT men steal trunks\", \"und null?\" : null }";
+		
 
 	mp_Atomize(json, print_atom);
 
