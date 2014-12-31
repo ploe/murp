@@ -160,6 +160,43 @@ static char NestedQuote(_mp_Lexer *lexer, mp_Atom *atom) {
 	return c;
 }
 
+static char *_mp_NUMBERS = "1234567890";
+
+static void *GetNumberExp(_mp_Lexer *lexer, mp_Atom *atom) {
+	char c = _mp_Ignore(lexer, _mp_NUMBERS);
+	if ((c == ',') || isspace(c)) atom->value = DispatchCustom(lexer, lexer->start - 1, lexer->len);
+	else atom->type = mp_EOVALUE;
+
+	return _mp_SEND_ATOM;
+}
+
+static void *GetNumberFrac(_mp_Lexer *lexer, mp_Atom *atom) {
+	char c = _mp_Ignore(lexer, _mp_NUMBERS);
+	if (c == 'e'|| c == 'E') {
+		char next = _mp_Peek(lexer);
+		if (next == '+' || next == '-') _mp_Next(lexer);
+		return GetNumberExp;
+	}
+	else if ((c == ',') || isspace(c)) atom->value = DispatchCustom(lexer, lexer->start - 1, lexer->len);
+	else atom->type = mp_EOVALUE;
+
+	return _mp_SEND_ATOM;
+}
+
+static void *GetNumberInt(_mp_Lexer *lexer, mp_Atom *atom) {
+	char c = _mp_Ignore(lexer, _mp_NUMBERS);
+	if (c == '.') return GetNumberFrac;
+	else if (c == 'e'|| c == 'E') {
+		char next = _mp_Peek(lexer);
+		if (next == '+' || next == '-') _mp_Next(lexer);
+		return GetNumberExp;
+	}
+	else if ((c == ',') || isspace(c)) atom->value = DispatchCustom(lexer, lexer->start - 1, lexer->len);
+	else atom->type = mp_EOVALUE;
+
+	return _mp_SEND_ATOM;
+}
+
 static void *GetValue(_mp_Lexer *lexer, mp_Atom *atom) {
 	char c = _mp_Ignore(lexer, _mp_WHITESPACE);
 
@@ -189,6 +226,11 @@ static void *GetValue(_mp_Lexer *lexer, mp_Atom *atom) {
 			atom->value = DispatchPattern(lexer, "null");
 			return _mp_SEND_ATOM;
 		}
+	}
+	else if ((c == '-') || isdigit(c)) {
+		_mp_Ditch(lexer);
+		atom->type = mp_NUMBER;
+		return GetNumberInt;
 	}
 	
 

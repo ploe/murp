@@ -1,5 +1,18 @@
 #include "privates.h"
 
+//bk_Bucket Signals = bk_BucketMe();
+
+//bk_Dunk("IS BUTTON PRESSED?", &buttonpressed, Signals);
+//bk_Spurt("IS BUTTON PRESSED?", Signals);
+
+//bk_KVPair {
+//	int hkey;
+//	char *lkey;
+//	void *val;
+//	bk_KVPair *prev, *next;
+//};
+//
+
 /* murp - the half arsed json-esque parser:
 	murp's purpose is to be a small, almost pointless json parser.
 	It picks out each key-value pair and identifies its type.
@@ -58,7 +71,7 @@ mp_Atomizer count_elems(mp_Atom atom, void *probe) {
 }
 
 int main(int argc, char *argv[]) {
-	char *json = "{\"dis be trooo\" : true, \"dix bwe fuls\" : false, \"vix is teh sex\":\"SHE SURE IS SCAMP\", \"NUSHNUSH\": {\"hello\" : \"world\", \"nested array\" : [[1, 2, 3, 4], {}]}, \"ARRAY EXAMPLE\" : [{123}\"\"],  \"well what do we have here\"    :      \"HOT men steal trunks\", \"und null?\" : null }";
+	char *json = "{\"dis be trooo\" : true, \"dix bwe fuls\" : false, \"vix is teh sex\":\"SHE SURE IS SCAMP\", \"NUSHNUSH\": {\"hello\" : \"world\", \"nested array\" : [[1, 2, 3, 4], {}]}, \"ARRAY EXAMPLE\" : [{123}\"\"],  \"well what do we have here\"    :      \"HOT men steal trunks\", \"und null?\" : null , \"noomboo\" : 215555 , \"nomboh\" : -1234567e-1000	,}";
 		
 
 	mp_Atomize(json, print_atom);
