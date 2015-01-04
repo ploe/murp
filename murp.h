@@ -1,3 +1,7 @@
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef MURP_PUBLIC
 #define MURP_PUBLIC
 /*	public.h defines the global types and macros that a user might
@@ -79,3 +83,9 @@ mp_Atomizer mp_ProbeSlice(mp_Slice *src, mp_Atomizer (*callback)(mp_Atom, void *
 #define mp_IS_ERROR(i) ((i > _mp_ERRORS) && (i < _mp_END_OF_ERRORS))
 
 #endif
+
+#ifdef __cplusplus
+}
+#endif
+
+

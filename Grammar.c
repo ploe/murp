@@ -1,4 +1,6 @@
-#include "privates.h"
+#include "murp_privates.h"
+
+/*
 
 void dumpLexer(_mp_Lexer *lexer) {
 	puts("Lexer {");
@@ -9,6 +11,8 @@ void dumpLexer(_mp_Lexer *lexer) {
 	printf("\tnext:\t'%c'\n", _mp_Peek(lexer));
 	puts("}");
 }
+
+*/
 
 char *_mp_WHITESPACE = " \t\n\r\v\f";
 
@@ -43,11 +47,11 @@ mp_Slice DispatchCustom(_mp_Lexer *lexer, char *start, unsigned int len) {
 
 mp_Slice DispatchPattern(_mp_Lexer *lexer, char *value) {
 	unsigned int len = strlen(value);
-    mp_Slice val = {lexer->start-1, len};
+	mp_Slice val = {lexer->start-1, len};
 	lexer->len += len-1;
-    _mp_Ditch(lexer);
-
-    return val;
+	_mp_Ditch(lexer);
+	
+	 return val;
 }
 
 static void *GetStringValue(_mp_Lexer *lexer, mp_Atom *atom) {
@@ -164,7 +168,11 @@ static char *_mp_NUMBERS = "1234567890";
 
 static void *GetNumberExp(_mp_Lexer *lexer, mp_Atom *atom) {
 	char c = _mp_Ignore(lexer, _mp_NUMBERS);
-	if ((c == ',') || isspace(c)) atom->value = DispatchCustom(lexer, lexer->start - 1, lexer->len);
+	if ((c == ',') || isspace(c)) {
+		atom->value = DispatchCustom(lexer, lexer->start - 1, lexer->len);
+		/*	nudge the len before the comma so we don't absorb it	*/
+		if(c == ',') lexer->start -= 1;
+	}
 	else atom->type = mp_EOVALUE;
 
 	return _mp_SEND_ATOM;
@@ -177,7 +185,11 @@ static void *GetNumberFrac(_mp_Lexer *lexer, mp_Atom *atom) {
 		if (next == '+' || next == '-') _mp_Next(lexer);
 		return GetNumberExp;
 	}
-	else if ((c == ',') || isspace(c)) atom->value = DispatchCustom(lexer, lexer->start - 1, lexer->len);
+	else if ((c == ',') || isspace(c)) {
+		atom->value = DispatchCustom(lexer, lexer->start - 1, lexer->len);
+		/*	nudge the len before the comma so we don't absorb it	*/
+		if(c == ',') lexer->start -= 1;
+	}
 	else atom->type = mp_EOVALUE;
 
 	return _mp_SEND_ATOM;
@@ -191,7 +203,11 @@ static void *GetNumberInt(_mp_Lexer *lexer, mp_Atom *atom) {
 		if (next == '+' || next == '-') _mp_Next(lexer);
 		return GetNumberExp;
 	}
-	else if ((c == ',') || isspace(c)) atom->value = DispatchCustom(lexer, lexer->start - 1, lexer->len);
+	else if ((c == ',') || isspace(c)) {
+		atom->value = DispatchCustom(lexer, lexer->start - 1, lexer->len);
+		/*	nudge the len before the comma so we don't absorb it	*/
+		if(c == ',') lexer->start -= 1;
+	}
 	else atom->type = mp_EOVALUE;
 
 	return _mp_SEND_ATOM;
@@ -278,20 +294,27 @@ static void *FindNextObjectElement(_mp_Lexer *lexer, mp_Atom *atom) {
 	atom->container = mp_OBJECT;
 	char c = _mp_Ignore(lexer, _mp_WHITESPACE);
 	if(c == ',') {
-		_mp_Next(lexer);
 		_mp_Ditch(lexer);
 		return NextObjectElement;
 	}
-	else if(c == '}') {
-		atom->type = mp_DONE;
-	}
-	else {
-		atom->type = mp_EOSTRUCT;
-	}
+	else if(c == '}') atom->type = mp_DONE;
+	else atom->type = mp_EOSTRUCT;
 
 	return _mp_SEND_ATOM;
 }
 
+static void *FindNextArrayElement(_mp_Lexer *lexer, mp_Atom *atom) {
+	atom->container = mp_ARRAY;
+	char c = _mp_Ignore(lexer, _mp_WHITESPACE);
+	if(c == ',') {
+		_mp_Ditch(lexer);
+		return GetValue;
+	}
+	else if(c == ']') atom->type = mp_DONE;
+	else atom->type = mp_EOSTRUCT;
+
+	return _mp_SEND_ATOM;
+}
 static void *Identify(_mp_Lexer *lexer, mp_Atom *atom) {
 	// ignore all trailing whitespace
 	char c = _mp_Ignore(lexer, _mp_WHITESPACE);
@@ -303,7 +326,8 @@ static void *Identify(_mp_Lexer *lexer, mp_Atom *atom) {
 			return NextObjectElement;	
 		break;
 
-		case '[': puts("parse array");
+		case '[': atom->container = mp_ARRAY;
+			return GetValue;
 		break;
 	}
 	
@@ -326,7 +350,7 @@ mp_Atomizer lex(_mp_Lexer *lexer, mp_Atomizer (*callback)(mp_Atom, void *), void
 		}
 		else if (status == mp_CONTINUE) {
 			if (atom.container == mp_OBJECT) grammar = FindNextObjectElement;
-			else if(atom.container == mp_ARRAY) puts("NextArrayElement");
+			else if(atom.container == mp_ARRAY) grammar = FindNextArrayElement;
 		}
 	}
 

@@ -1,9 +1,13 @@
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef MURP_PRIVATES
 #define MURP_PRIVATES
 
 /*	murp headers	*/
 
-#include "./public.h"
+#include "./murp.h"
 #include "./Lexer.h"
 #include "./Grammar.h"
 
@@ -24,3 +28,9 @@ enum {
 #define _mp_SEND_ATOM NULL
 
 #endif
+
+#ifdef __cplusplus
+}
+#endif
+
+

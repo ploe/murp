@@ -1,4 +1,4 @@
-#include "privates.h"
+#include "murp_privates.h"
 #define LEXER_OVERFLOW(l) (l->last && (l->len > l->last))
 
 _mp_Lexer NewLexer(char *src, unsigned int last) {
@@ -81,3 +81,4 @@ void _mp_Ditch(_mp_Lexer *lexer) {
 	lexer->len = 0;
 }
 
+#undef LEXER_OVERFLOW
